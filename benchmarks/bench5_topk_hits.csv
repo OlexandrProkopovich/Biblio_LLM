@@ -1,0 +1,5 @@
+metric,neural_percent,tfidf_percent
+Hit@1,100.00,80.00
+Hit@3,100.00,86.67
+Hit@5,100.00,93.33
+Hit@10,100.00,100.00

@@ -1,0 +1,26 @@
+build/
+.claude/
+BibSearch Setup/
+
+*.bin
+*.msi
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+*.ilk
+
+*.docx
+
+.DS_Store
+Thumbs.db
+
+# Large local datasets / snapshots
+tools/arxiv-metadata-oai-snapshot.json
+tools/dataset.tsv
+tools/dataset_top15_balanced.tsv
+tools/dataset_top15_balanced_300k.tsv
+
+# IDE metadata
+tools/.idea/

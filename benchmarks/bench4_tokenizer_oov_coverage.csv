@@ -1,0 +1,6 @@
+domain,word_oov_percent,bpe_char_coverage_percent
+ML,0.00,100.00
+Physics,100.00,100.00
+Robotics,100.00,100.00
+Security,100.00,100.00
+Math,100.00,100.00

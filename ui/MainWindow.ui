@@ -1,0 +1,293 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ui version="4.0">
+	<class>MainWindow</class>
+	<widget class="QMainWindow" name="MainWindow">
+		<property name="windowTitle">
+			<string>Bibliographic Search</string>
+		</property>
+		<property name="geometry">
+			<rect>
+				<x>0</x>
+				<y>0</y>
+				<width>1400</width>
+				<height>650</height>
+			</rect>
+		</property>
+		<widget class="QWidget" name="centralwidget">
+			<layout class="QHBoxLayout" name="mainLayout">
+				<property name="leftMargin"><number>0</number></property>
+				<property name="topMargin"><number>0</number></property>
+				<property name="rightMargin"><number>0</number></property>
+				<property name="bottomMargin"><number>0</number></property>
+				<item>
+					<widget class="QSplitter" name="splitter">
+						<property name="orientation">
+							<enum>Qt::Horizontal</enum>
+						</property>
+						<widget class="QListWidget" name="navList">
+							<property name="maximumWidth"><number>180</number></property>
+							<property name="minimumWidth"><number>150</number></property>
+							<item>
+								<property name="text"><string>All Articles</string></property>
+							</item>
+							<item>
+								<property name="text"><string>Saved</string></property>
+							</item>
+						</widget>
+						<widget class="QStackedWidget" name="stackedWidget">
+							<widget class="QWidget" name="allArticlesPage">
+								<layout class="QVBoxLayout" name="allArticlesLayout">
+									<item>
+										<layout class="QHBoxLayout" name="searchLayout">
+											<item>
+												<widget class="QLineEdit" name="queryInput">
+													<property name="placeholderText">
+														<string>Enter a query...</string>
+													</property>
+												</widget>
+											</item>
+											<item>
+												<widget class="QComboBox" name="sourceCombo">
+													<item><property name="text"><string>Arxiv</string></property></item>
+													<item><property name="text"><string>PubMed</string></property></item>
+													<item><property name="text"><string>SemanticScholar</string></property></item>
+												</widget>
+											</item>
+											<item>
+												<widget class="QPushButton" name="searchButton">
+													<property name="text"><string>Search</string></property>
+													<property name="maximumWidth"><number>80</number></property>
+												</widget>
+											</item>
+										</layout>
+									</item>
+									<item>
+										<layout class="QHBoxLayout" name="filterLayout">
+											<item>
+												<widget class="QLabel" name="sortLabel">
+													<property name="text"><string>Sort by:</string></property>
+												</widget>
+											</item>
+											<item>
+												<widget class="QComboBox" name="sortCombo">
+													<property name="maximumWidth"><number>130</number></property>
+													<item><property name="text"><string>Relevance</string></property></item>
+													<item><property name="text"><string>Date (newest)</string></property></item>
+													<item><property name="text"><string>Date (oldest)</string></property></item>
+												</widget>
+											</item>
+											<item>
+												<widget class="QLabel" name="rankingModeLabel">
+													<property name="text"><string>Ranking:</string></property>
+												</widget>
+											</item>
+											<item>
+												<widget class="QComboBox" name="rankingModeCombo">
+													<property name="maximumWidth"><number>140</number></property>
+													<item><property name="text"><string>Neural Model</string></property></item>
+													<item><property name="text"><string>TF-IDF</string></property></item>
+												</widget>
+											</item>
+											<item>
+												<spacer>
+													<property name="orientation"><enum>Qt::Horizontal</enum></property>
+													<property name="sizeHint" stdset="0">
+														<size><width>40</width><height>20</height></size>
+													</property>
+												</spacer>
+											</item>
+										</layout>
+									</item>
+									<item>
+										<widget class="QProgressBar" name="progressBar">
+											<property name="minimum"><number>0</number></property>
+											<property name="maximum"><number>0</number></property>
+											<property name="visible"><bool>false</bool></property>
+											<property name="textVisible"><bool>false</bool></property>
+										</widget>
+									</item>
+									<item>
+										<widget class="QSplitter" name="contentSplitter">
+											<property name="orientation"><enum>Qt::Horizontal</enum></property>
+											<widget class="QListWidget" name="articlesList">
+												<property name="spacing"><number>4</number></property>
+											</widget>
+											<widget class="QWidget" name="detailPanel">
+												<property name="visible"><bool>false</bool></property>
+												<property name="minimumWidth"><number>300</number></property>
+												<layout class="QVBoxLayout" name="detailLayout">
+													<property name="spacing"><number>10</number></property>
+													<item>
+														<layout class="QHBoxLayout" name="detailHeaderLayout">
+															<item>
+																<spacer>
+																	<property name="orientation"><enum>Qt::Horizontal</enum></property>
+																	<property name="sizeHint" stdset="0">
+																		<size><width>28</width><height>20</height></size>
+																	</property>
+																	<property name="sizeType"><enum>QSizePolicy::Fixed</enum></property>
+																</spacer>
+															</item>
+															<item>
+																<widget class="QLabel" name="detailHeaderLabel">
+																	<property name="text"><string>Article Details</string></property>
+																	<property name="alignment"><set>Qt::AlignCenter</set></property>
+																</widget>
+															</item>
+															<item>
+																<widget class="QPushButton" name="detailCloseBtn">
+																	<property name="text"><string>✕</string></property>
+																	<property name="maximumWidth"><number>28</number></property>
+																	<property name="maximumHeight"><number>28</number></property>
+																	<property name="flat"><bool>true</bool></property>
+																	<property name="toolTip"><string>Close</string></property>
+																	<property name="cursor">
+																		<cursorShape>PointingHandCursor</cursorShape>
+																	</property>
+																</widget>
+															</item>
+														</layout>
+													</item>
+													<item>
+														<widget class="QFrame" name="detailSeparator">
+															<property name="frameShape"><enum>QFrame::HLine</enum></property>
+															<property name="frameShadow"><enum>QFrame::Sunken</enum></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QLabel" name="detailTitle">
+															<property name="wordWrap"><bool>true</bool></property>
+															<property name="textInteractionFlags">
+																<set>Qt::TextBrowserInteraction</set>
+															</property>
+															<property name="openExternalLinks"><bool>true</bool></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QLabel" name="detailMeta">
+															<property name="wordWrap"><bool>true</bool></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QTextEdit" name="detailAbstract">
+															<property name="readOnly"><bool>true</bool></property>
+															<property name="placeholderText">
+																<string>Abstract</string>
+															</property>
+															<property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+														</widget>
+													</item>
+												</layout>
+											</widget>
+										</widget>
+									</item>
+								</layout>
+							</widget>
+							<widget class="QWidget" name="savedPage">
+								<layout class="QVBoxLayout" name="savedLayout">
+									<item>
+										<layout class="QHBoxLayout" name="savedFilterLayout">
+											<item>
+												<widget class="QLabel" name="savedSortLabel">
+													<property name="text"><string>Sort by:</string></property>
+												</widget>
+											</item>
+											<item>
+												<widget class="QComboBox" name="savedSortCombo">
+													<property name="maximumWidth"><number>130</number></property>
+													<item><property name="text"><string>Relevance</string></property></item>
+													<item><property name="text"><string>Date (newest)</string></property></item>
+													<item><property name="text"><string>Date (oldest)</string></property></item>
+												</widget>
+											</item>
+											<item>
+												<spacer>
+													<property name="orientation"><enum>Qt::Horizontal</enum></property>
+													<property name="sizeHint" stdset="0">
+														<size><width>40</width><height>20</height></size>
+													</property>
+												</spacer>
+											</item>
+										</layout>
+									</item>
+									<item>
+										<widget class="QSplitter" name="savedContentSplitter">
+											<property name="orientation"><enum>Qt::Horizontal</enum></property>
+											<widget class="QListWidget" name="savedList">
+												<property name="spacing"><number>4</number></property>
+											</widget>
+											<widget class="QWidget" name="savedDetailPanel">
+												<property name="visible"><bool>false</bool></property>
+												<property name="minimumWidth"><number>300</number></property>
+												<layout class="QVBoxLayout" name="savedDetailLayout">
+													<property name="spacing"><number>10</number></property>
+													<item>
+														<layout class="QHBoxLayout" name="savedDetailHeaderLayout">
+															<item>
+																<spacer>
+																	<property name="orientation"><enum>Qt::Horizontal</enum></property>
+																	<property name="sizeHint" stdset="0">
+																		<size><width>28</width><height>20</height></size>
+																	</property>
+																	<property name="sizeType"><enum>QSizePolicy::Fixed</enum></property>
+																</spacer>
+															</item>
+															<item>
+																<widget class="QLabel" name="savedDetailHeaderLabel">
+																	<property name="text"><string>Article Details</string></property>
+																	<property name="alignment"><set>Qt::AlignCenter</set></property>
+																</widget>
+															</item>
+															<item>
+																<widget class="QPushButton" name="savedDetailCloseBtn">
+																	<property name="text"><string>✕</string></property>
+																	<property name="maximumWidth"><number>28</number></property>
+																	<property name="maximumHeight"><number>28</number></property>
+																	<property name="flat"><bool>true</bool></property>
+																	<property name="toolTip"><string>Close</string></property>
+																	<property name="cursor">
+																		<cursorShape>PointingHandCursor</cursorShape>
+																	</property>
+																</widget>
+															</item>
+														</layout>
+													</item>
+													<item>
+														<widget class="QFrame" name="savedDetailSeparator">
+															<property name="frameShape"><enum>QFrame::HLine</enum></property>
+															<property name="frameShadow"><enum>QFrame::Sunken</enum></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QLabel" name="savedDetailTitle">
+															<property name="wordWrap"><bool>true</bool></property>
+															<property name="textInteractionFlags">
+																<set>Qt::TextBrowserInteraction</set>
+															</property>
+															<property name="openExternalLinks"><bool>true</bool></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QLabel" name="savedDetailMeta">
+															<property name="wordWrap"><bool>true</bool></property>
+														</widget>
+													</item>
+													<item>
+														<widget class="QTextEdit" name="savedDetailAbstract">
+															<property name="readOnly"><bool>true</bool></property>
+															<property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+														</widget>
+													</item>
+												</layout>
+											</widget>
+										</widget>
+									</item>
+								</layout>
+							</widget>
+						</widget>
+					</widget>
+				</item>
+			</layout>
+		</widget>
+	</widget>
+</ui>

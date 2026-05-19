@@ -1,0 +1,10 @@
+query,neural_ndcg10,tfidf_ndcg10,neural_p10,tfidf_p10,neural_mrr10,tfidf_mrr10
+neural model for image classification,0.8512,0.6785,0.8000,0.6000,1.0000,1.0000
+transformer language model retrieval,0.6193,0.4319,0.4000,0.4000,1.0000,0.5000
+quantum circuit optimization,0.5571,0.7323,0.4000,0.5000,1.0000,1.0000
+robot control reinforcement learning,0.7846,0.6471,0.7000,0.6000,1.0000,1.0000
+cryptographic protocol security,1.0000,0.5079,0.4000,0.2000,1.0000,1.0000
+graph combinatorics theorem,0.8955,0.4928,0.7000,0.4000,1.0000,0.5000
+statistical inference probability model,0.7223,0.3120,0.6000,0.3000,1.0000,0.5000
+numerical simulation computational physics,0.9157,0.5215,0.7000,0.3000,1.0000,1.0000
+AVERAGE,0.7932,0.5405,0.5875,0.4125,,

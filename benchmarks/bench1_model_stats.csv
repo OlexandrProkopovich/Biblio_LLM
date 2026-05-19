@@ -1,0 +1,6 @@
+metric,value
+model_size_mb,1646.45
+load_ms,5368.58
+articles_in_model,1000000
+vocabulary_size,1218618
+embedding_dim,64
