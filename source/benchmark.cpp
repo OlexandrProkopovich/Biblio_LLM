@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -315,10 +316,10 @@ static RankingMetrics computeMetrics(const std::vector<CArticle>& ranked,
 
 static void bench1_ranking_quality(CBibAnalyzer& analyzer, const TopicSamples& samples)
 {
-    printHeader("Benchmark 1: Neural vs TF-IDF ranking quality on hard candidates");
+    printHeader("Benchmark 1: Original vs TF-IDF vs Neural ranking quality on hard candidates");
     std::mt19937 rng(42);
     std::vector<std::vector<std::string>> rows;
-    double nNdcg = 0, tNdcg = 0, nP = 0, tP = 0;
+    double oNdcg = 0, nNdcg = 0, tNdcg = 0, oP = 0, nP = 0, tP = 0;
 
     for (const auto& qc : kQueryCases)
     {
@@ -326,18 +327,36 @@ static void bench1_ranking_quality(CBibAnalyzer& analyzer, const TopicSamples& s
         auto candidates = buildHardCandidateSet(samples, qc, relevance, rng);
         auto rankedNeural = analyzer.RankArticles(qc.query, candidates, candidates.size());
         auto rankedTFIDF = analyzer.RankArticlesTFIDF(qc.query, candidates, candidates.size());
+        RankingMetrics om = computeMetrics(candidates, relevance);
         RankingMetrics nm = computeMetrics(rankedNeural, relevance);
         RankingMetrics tm = computeMetrics(rankedTFIDF, relevance);
 
-        nNdcg += nm.ndcg10; tNdcg += tm.ndcg10; nP += nm.precision10; tP += tm.precision10;
-        rows.push_back({qc.query, fmt(nm.ndcg10), fmt(tm.ndcg10), fmt(nm.precision10), fmt(tm.precision10), fmt(nm.mrr10), fmt(tm.mrr10)});
+        oNdcg += om.ndcg10; nNdcg += nm.ndcg10; tNdcg += tm.ndcg10;
+        oP += om.precision10; nP += nm.precision10; tP += tm.precision10;
+        rows.push_back({
+            qc.query,
+            fmt(om.ndcg10), fmt(tm.ndcg10), fmt(nm.ndcg10),
+            fmt(om.precision10), fmt(tm.precision10), fmt(nm.precision10),
+            fmt(om.mrr10), fmt(tm.mrr10), fmt(nm.mrr10)
+        });
     }
 
     double denom = static_cast<double>(kQueryCases.size());
-    rows.push_back({"AVERAGE", fmt(nNdcg / denom), fmt(tNdcg / denom), fmt(nP / denom), fmt(tP / denom), "", ""});
+    rows.push_back({
+        "AVERAGE",
+        fmt(oNdcg / denom), fmt(tNdcg / denom), fmt(nNdcg / denom),
+        fmt(oP / denom), fmt(tP / denom), fmt(nP / denom),
+        "", "", ""
+    });
 
     writeCSV("bench1_neural_vs_tfidf_quality.csv",
-        {"query", "neural_ndcg10", "tfidf_ndcg10", "neural_p10", "tfidf_p10", "neural_mrr10", "tfidf_mrr10"}, rows);
+        {
+            "query",
+            "original_ndcg10", "tfidf_ndcg10", "neural_ndcg10",
+            "original_p10", "tfidf_p10", "neural_p10",
+            "original_mrr10", "tfidf_mrr10", "neural_mrr10"
+        },
+        rows);
 }
 
 static std::vector<CArticle> mixedCandidates(const TopicSamples& samples, std::size_t n, std::mt19937& rng)
@@ -430,43 +449,117 @@ static void bench3_word_vs_bpe_speed()
     writeCSV("bench3_word_vs_bpe_tokenization.csv", {"chars", "word_us", "bpe_us", "bpe_to_word_ratio"}, rows);
 }
 
-static void bench4_oov_coverage()
+static std::vector<std::string> extractAlphaWords(const std::string& text, std::size_t maxWords)
+{
+    std::vector<std::string> words;
+    words.reserve(std::min<std::size_t>(maxWords, 4096));
+
+    std::string current;
+    for (unsigned char ch : text)
+    {
+        if (std::isalpha(ch))
+        {
+            current.push_back(static_cast<char>(std::tolower(ch)));
+        }
+        else if (!current.empty())
+        {
+            if (current.size() >= 3)
+                words.push_back(current);
+            current.clear();
+            if (words.size() >= maxWords)
+                return words;
+        }
+    }
+
+    if (!current.empty() && current.size() >= 3 && words.size() < maxWords)
+        words.push_back(current);
+
+    return words;
+}
+
+static void appendTopicWords(const TopicSamples& samples,
+                             const std::vector<std::string>& topics,
+                             std::size_t articleOffset,
+                             std::size_t maxArticlesPerTopic,
+                             std::size_t maxWords,
+                             std::vector<std::string>& out)
+{
+    for (const auto& topic : topics)
+    {
+        auto it = samples.byTopic.find(topic);
+        if (it == samples.byTopic.end())
+            continue;
+
+        const auto& bucket = it->second;
+        std::size_t end = std::min(bucket.size(), articleOffset + maxArticlesPerTopic);
+        for (std::size_t i = articleOffset; i < end && out.size() < maxWords; i++)
+        {
+            const auto text = bucket[i].title + " " + bucket[i].abstract;
+            auto words = extractAlphaWords(text, maxWords - out.size());
+            out.insert(out.end(), words.begin(), words.end());
+        }
+    }
+}
+
+static void bench4_oov_coverage(const TopicSamples& samples)
 {
     printHeader("Benchmark 4: Word-level OOV vs BPE character fallback");
-    std::string mlCorpus = "machine learning neural network transformer attention embedding gradient classification regression dropout";
+
+    std::vector<std::string> trainingWords;
+    appendTopicWords(samples, {"machine learning"}, 0, 180, 30000, trainingWords);
+
+    std::string mlCorpus;
+    for (const auto& w : trainingWords)
+    {
+        mlCorpus += w;
+        mlCorpus += ' ';
+    }
+
     CTokenizer wordTok;
     wordTok.Build(mlCorpus);
     CBPETokenizer bpeTok;
-    bpeTok.Build(mlCorpus, 200);
+    bpeTok.Build(mlCorpus, 500);
 
-    struct Domain { std::string name; std::vector<std::string> words; };
+    struct Domain { std::string name; std::vector<std::string> topics; };
     std::vector<Domain> domains = {
-        {"ML", {"machine", "learning", "attention", "embedding", "gradient", "classification"}},
-        {"Physics", {"quantum", "entanglement", "photon", "decoherence", "plasma", "superconductor"}},
-        {"Robotics", {"robot", "control", "trajectory", "localization", "actuator", "navigation"}},
-        {"Security", {"cryptography", "protocol", "encryption", "attack", "authentication", "privacy"}},
-        {"Math", {"combinatorics", "theorem", "probability", "number", "optimization", "graph"}}
+        {"Machine learning", {"machine learning"}},
+        {"NLP", {"natural language processing"}},
+        {"Physics", {"quantum computing", "computational physics"}},
+        {"Robotics", {"robotics"}},
+        {"Security", {"cryptography security"}},
+        {"Mathematics", {"combinatorics", "number theory", "probability theory"}}
     };
 
     std::vector<std::vector<std::string>> rows;
     for (const auto& d : domains)
     {
-        int wordOov = 0;
-        int bpeMissingChars = 0;
-        int totalChars = 0;
-        for (const auto& w : d.words)
+        std::vector<std::string> words;
+        appendTopicWords(samples, d.topics, 180, 240, 12000, words);
+
+        std::size_t wordOov = 0;
+        std::size_t bpeFragmented = 0;
+        std::size_t bpeTotalPieces = 0;
+        std::size_t bpeMissingChars = 0;
+        std::size_t totalChars = 0;
+        for (const auto& w : words)
         {
             if (wordTok.Encode(w).empty()) wordOov++;
             auto bpeIds = bpeTok.Encode(w);
-            totalChars += static_cast<int>(w.size());
-            if (bpeIds.empty()) bpeMissingChars += static_cast<int>(w.size());
+            bpeTotalPieces += bpeIds.size();
+            if (bpeIds.size() > 1) bpeFragmented++;
+            totalChars += w.size();
+            if (bpeIds.empty()) bpeMissingChars += w.size();
         }
-        double wordOovPct = 100.0 * wordOov / d.words.size();
+        double wordOovPct = words.empty() ? 0.0 : 100.0 * static_cast<double>(wordOov) / words.size();
+        double bpeFragmentedPct = words.empty() ? 0.0 : 100.0 * static_cast<double>(bpeFragmented) / words.size();
+        double bpeAvgPieces = words.empty() ? 0.0 : static_cast<double>(bpeTotalPieces) / words.size();
         double bpeCoverage = totalChars == 0 ? 0.0 : 100.0 * (1.0 - static_cast<double>(bpeMissingChars) / totalChars);
-        rows.push_back({d.name, fmt(wordOovPct, 2), fmt(bpeCoverage, 2)});
+        double bpeOovPct = 100.0 - bpeCoverage;
+        rows.push_back({d.name, fmt(wordOovPct, 2), fmt(bpeFragmentedPct, 2), fmt(bpeAvgPieces, 3), fmt(bpeOovPct, 2), fmt(bpeCoverage, 2), std::to_string(words.size()), std::to_string(wordOov)});
     }
 
-    writeCSV("bench4_tokenizer_oov_coverage.csv", {"domain", "word_oov_percent", "bpe_char_coverage_percent"}, rows);
+    writeCSV("bench4_tokenizer_oov_coverage.csv",
+        {"domain", "word_oov_percent", "bpe_fragmented_percent", "bpe_avg_pieces_per_word", "bpe_oov_percent", "bpe_char_coverage_percent", "sampled_tokens", "word_oov_tokens"}, rows);
 }
 
 static void bench5_multithread_training(const TopicSamples& samples)
@@ -522,8 +615,8 @@ int main(int argc, char* argv[])
 {
     try
     {
-        std::string modelPath = argc >= 2 ? argv[1] : "D:\\Diploma_LLM\\model.bin";
-        std::string datasetPath = argc >= 3 ? argv[2] : "D:\\Diploma_LLM\\tools\\dataset.tsv";
+        std::string modelPath = argc >= 2 ? argv[1] : "model.bin";
+        std::string datasetPath = argc >= 3 ? argv[2] : "tools/dataset.tsv";
         std::size_t samplesPerTopic = argc >= 4 ? static_cast<std::size_t>(std::stoul(argv[3])) : 1000;
 
         std::cout << "Diploma Benchmark Suite\n";
@@ -532,6 +625,13 @@ int main(int argc, char* argv[])
         std::cout << "Output : " << kBenchmarkDir.string() << "\n";
 
         TopicSamples samples = loadTopicSamples(datasetPath, samplesPerTopic);
+        std::string selectedBenchmark = argc >= 5 ? std::string(argv[4]) : "";
+        if (selectedBenchmark == "bench4")
+        {
+            bench4_oov_coverage(samples);
+            std::cout << "\nBenchmark 4 CSV file written to " << kBenchmarkDir.string() << ".\n";
+            return 0;
+        }
 
         printHeader("Loading trained model");
         CBibAnalyzer analyzer(nullptr, 64, 32, 128);
@@ -539,10 +639,17 @@ int main(int argc, char* argv[])
         analyzer.LoadModel(modelPath);
         std::cout << "Loaded model in " << fmt(msElapsed(t0), 2) << " ms\n";
 
+        if (selectedBenchmark == "bench1")
+        {
+            bench1_ranking_quality(analyzer, samples);
+            std::cout << "\nBenchmark 1 CSV file written to " << kBenchmarkDir.string() << ".\n";
+            return 0;
+        }
+
         bench1_ranking_quality(analyzer, samples);
         bench2_reranking_latency(analyzer, samples);
         bench3_word_vs_bpe_speed();
-        bench4_oov_coverage();
+        bench4_oov_coverage(samples);
         bench5_multithread_training(samples);
         bench6_training_loss_curve();
 
