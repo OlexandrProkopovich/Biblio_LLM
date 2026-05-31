@@ -186,6 +186,14 @@ build/Release/LLM_Train --dataset tools/dataset.tsv --max-pairs 1000000 --epochs
 
 Великі датасети та файли навченої моделі навмисно виключені з Git.
 
+> **Датасет для навчання** доступний за посиланням:
+> [Google Drive — dataset.tsv](https://drive.google.com/drive/folders/1UmuT7c4sjLEIVXABvHBt87Ep2ROMO6h5?usp=sharing)
+>
+> Завантажте файл і помістіть його за шляхом:
+> ```text
+> tools/dataset.tsv
+> ```
+
 ---
 
 ## 📊 Запуск бенчмарків
